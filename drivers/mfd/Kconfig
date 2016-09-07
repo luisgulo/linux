@@ -590,6 +590,13 @@ config MFD_MAX17135
 	  This is the MAX17135 PMIC support. It includes
 	  core support for communication with the MAX17135 chip.
 
+config MFD_TPS6518X
+    tristate "Texas Instruments TPS6518X EPD PMIC core"
+        depends on I2C
+    help
+      This is the TPS6518X PMIC support. It includes
+      core support for communication with the TPS6518X chip.
+
 config MFD_MAX77620
 	bool "Maxim Semiconductor MAX77620 and MAX20024 PMIC Support"
 	depends on I2C=y
