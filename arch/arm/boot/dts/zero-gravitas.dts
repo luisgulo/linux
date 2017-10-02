@@ -45,6 +45,7 @@
 			gpio = <&gpio4 15 0>;
 			enable-active-high;
 			vin-supply = <&swbst_reg>;
+			status = "disabled";
 		};
 
 		charger_regulator: regulator@1 {
@@ -690,7 +691,7 @@
 };*/
 
 &usbotg1 {
-	vbus-supply = <&reg_usb_otg1_vbus>;
+	/*vbus-supply = <&reg_usb_otg1_vbus>;*/
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg1>;
 	disable-over-current;
