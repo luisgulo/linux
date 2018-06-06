@@ -18,8 +18,11 @@
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <asm/unaligned.h>
+#include <linux/slab.h>
 
-#include <linux/power/bq27xxx_battery.h>
+#include <linux/string.h>
+
+#include "bq27xxx_battery.h"
 
 static irqreturn_t bq27xxx_battery_irq_handler_thread(int irq, void *data)
 {
@@ -65,6 +68,30 @@ static int bq27xxx_battery_i2c_read(struct bq27xxx_device_info *di, u8 reg,
 	return ret;
 }
 
+static int bq27xxx_battery_i2c_write(struct bq27xxx_device_info *di, u8 reg,
+				    const u8 *data, size_t len)
+{
+	struct i2c_client *client = to_i2c_client(di->dev);
+	int ret;
+	unsigned char *buf;
+
+	if (!client->adapter)
+		return -ENODEV;
+
+	buf = kzalloc(len + sizeof(reg), GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	buf[0] = reg;
+	memcpy (&buf[1], data, len);
+
+	ret = i2c_master_send(client, buf, len + sizeof(reg));
+
+	kfree(buf);
+
+	return ret;
+}
+
 static int bq27xxx_battery_i2c_probe(struct i2c_client *client,
 				     const struct i2c_device_id *id)
 {
@@ -79,6 +106,7 @@ static int bq27xxx_battery_i2c_probe(struct i2c_client *client,
 	di->chip = id->driver_data;
 	di->name = id->name;
 	di->bus.read = bq27xxx_battery_i2c_read;
+	di->bus.write = bq27xxx_battery_i2c_write;
 
 	ret = bq27xxx_battery_setup(di);
 	if (ret)

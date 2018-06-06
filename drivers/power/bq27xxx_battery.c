@@ -48,7 +48,8 @@
 #include <linux/slab.h>
 #include <linux/of.h>
 
-#include <linux/power/bq27xxx_battery.h>
+#include "bq27xxx_battery.h"
+#include "bq27441_battery.h"
 
 #define DRIVER_VERSION		"1.2.0"
 
@@ -76,6 +77,7 @@
 #define BQ27XXX_CURRENT_CONSTANT	(3570) /* 3.57 µV * 1000 */
 
 #define INVALID_REG_ADDR	0xff
+
 
 /*
  * bq27xxx_reg_index - Register names
@@ -979,17 +981,23 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 
 	di->bat = power_supply_register_no_ws(di->dev, psy_desc, &psy_cfg);
 	if (IS_ERR(di->bat)) {
-		dev_err(di->dev, "failed to register battery\n");
+		dev_err(di->dev, "Failed to register battery\n");
 		return PTR_ERR(di->bat);
 	}
 
-	dev_info(di->dev, "support ver. %s enabled\n", DRIVER_VERSION);
+	dev_info(di->dev, "Support ver. %s enabled\n", DRIVER_VERSION);
 
 	volt = bq27xxx_read(di, BQ27XXX_REG_VOLT, false);
 	if (volt < 0)
-		dev_err(di->dev, "error reading voltage\n");
+		dev_err(di->dev, "Error reading voltage\n");
 	else
 		dev_info(di->dev, "Measured voltage: %dmV\n", volt);
+
+	psy_desc = devm_kzalloc(di->dev, sizeof(*psy_desc), GFP_KERNEL);
+	if (!psy_desc)
+		return -ENOMEM;
+
+	bq27441_init(di);
 
 	bq27xxx_battery_update(di);
 
@@ -1086,6 +1094,8 @@ static int bq27xxx_battery_platform_probe(struct platform_device *pdev)
 static int bq27xxx_battery_platform_remove(struct platform_device *pdev)
 {
 	struct bq27xxx_device_info *di = platform_get_drvdata(pdev);
+
+	bq27441_exit(di);
 
 	bq27xxx_battery_teardown(di);
 
