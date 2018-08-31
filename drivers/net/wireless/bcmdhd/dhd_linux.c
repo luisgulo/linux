@@ -6032,8 +6032,12 @@ dhd_module_init(void)
 	int err;
 
 	DHD_ERROR(("%s in\n", __FUNCTION__));
+    printk("[BCMDHD] dhd_module_init: dhd_msg_level: %d\n", dhd_msg_level);
+
+    printk("[BCMDHD] dhd_module_init: calling dhd_wifi_platform_register_drv()..\n");
 	err = dhd_wifi_platform_register_drv();
 
+    printk("[BCMDHD] dhd_module_init: dhd_wifi_platform_register_drv() returned: %d\n", err);
 	return err;
 }
 

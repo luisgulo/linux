@@ -773,7 +773,7 @@
 	brcmf: bcrmf@1 {
 		reg = <1>;
 		/*compatible = "brcm,bcm4329-fmac";*/
-		compatible = "android.bcmdhd_wlan";
+		compatible = "android.bcmdhd_wlan"
 		interrupt-parent = <&gpio4>;
 		interrupts = <2 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "host-wake";
