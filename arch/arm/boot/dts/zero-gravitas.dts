@@ -48,6 +48,7 @@
 		};
 
 		charger_regulator: regulator@1 {
+			reg = <1>;
 			compatible = "regulator-fixed";
 			regulator-name = "charger-regulator";
 			regulator-min-microamp = <5000000>;
@@ -76,23 +77,38 @@
 			label = "Power";
 			gpios = <&gpio4 9 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_POWER>;
+			gpio-key,wakeup;
+			debounce-interval = <10>;
 		};
 
 		button_1 {
 			label = "Left";
 			gpios = <&gpio3 24 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_LEFT>;
+			gpio-key,wakeup;
+			debounce-interval = <5>;
 		};
 
 		button_2 {
 			label = "Home";
 			gpios = <&gpio3 26 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_HOME>;
+			gpio-key,wakeup;
+			debounce-interval = <5>;
 		};
 		button_3 {
 			label = "Right";
 			gpios = <&gpio3 28 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_RIGHT>;
+			gpio-key,wakeup;
+			debounce-interval = <5>;
+		};
+		button_4 {
+			label = "LowPower";
+			gpios = <&gpio3 31 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_WAKEUP>;
+			gpio-key,wakeup;
+			debounce-interval = <100>;
 		};
 	};
 
@@ -113,6 +129,7 @@
         pinctrl-0 = <&pinctrl_epdc_0>;
         VCOM-supply = <&VCOM_reg>;
         DISPLAY-supply = <&DISPLAY_reg>;
+	TMST-supply = <&TMST_reg>;
         status = "okay";
 };
 
@@ -241,13 +258,14 @@
 		reg = <0x48>;
 		pass_num = <2>;
 		gvee_pwrup = <0>; /* ms */
-		vneg_pwrup = <10>;
-		vpos_pwrup = <15>;
-		gvdd_pwrup = <15>;
+		vneg_pwrup = <3>;
+		vpos_pwrup = <6>;
+		gvdd_pwrup = <3>;
+
 		gvdd_pwrdn = <1>;
 		vpos_pwrdn = <2>;
-		vneg_pwrdn = <5>;
-		gvee_pwrdn = <40>;
+		vneg_pwrdn = <6>;
+		gvee_pwrdn = <50>;
 		/* These are only for passnum 1, we use i2c */
 		gpio_pmic_pwrgood = <&gpio2 13 0>;
 		gpio_pmic_vcom_ctrl = <&gpio2 3 0>;
@@ -296,6 +314,14 @@
 			VPOS_reg: VPOS {
 				/* 15v */
 				regulator-name = "VPOS";
+			};
+
+			TMST_reg: TMST {
+				regulator-name = "TMST";
+				/* 2's-compliment, -127 */
+				regulator-min-microvolt = <0xffffff81>;
+				/* 2's-compliment, +127 */
+				regulator-max-microvolt = <0x0000007f>;
 			};
 		};
 	};
@@ -415,7 +441,7 @@
 				MX6SL_PAD_EPDC_PWRINT__GPIO2_IO12	PAD_CTL_NONE
 
 				/* BQ27441 low power */
-				/*MX6SL_PAD_KEY_ROW3__GPIO3_IO31		0x17000*/
+				MX6SL_PAD_KEY_ROW3__GPIO3_IO31		0x17000
 
 				/* Wacom interrupt */
 				MX6SL_PAD_EPDC_PWRCTRL3__GPIO2_IO10	0x17000
@@ -436,7 +462,7 @@
 				MX6SL_PAD_ECSPI2_MISO__USB_OTG1_OC	0x1b0b0
 
 				/* Charger control */
-				MX6SL_PAD_KEY_ROW1__GPIO3_IO27		0x17000
+				MX6SL_PAD_KEY_ROW1__GPIO3_IO27		0x110b0
 				/* Charger status */
 				MX6SL_PAD_KEY_ROW4__GPIO4_IO01		PAD_CTL_NONE
 
@@ -509,10 +535,10 @@
 
 		pinctrl_keys: keygrp {
 			fsl,pins = <
-				MX6SL_PAD_ECSPI1_MOSI__GPIO4_IO09	PAD_CTL_NONE
-				MX6SL_PAD_KEY_COL0__GPIO3_IO24		PAD_CTL_NONE
-				MX6SL_PAD_KEY_COL1__GPIO3_IO26		PAD_CTL_NONE
-				MX6SL_PAD_KEY_COL2__GPIO3_IO28		PAD_CTL_NONE
+				MX6SL_PAD_ECSPI1_MOSI__GPIO4_IO09	0x100b1
+				MX6SL_PAD_KEY_COL0__GPIO3_IO24		0x100b1
+				MX6SL_PAD_KEY_COL1__GPIO3_IO26		0x100b1
+				MX6SL_PAD_KEY_COL2__GPIO3_IO28		0x100b1
 			>;
 		};
 
@@ -712,13 +738,16 @@
 };
 
 &usdhc2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usdhc2_100mhz>;
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2>;
+	pinctrl-1 = <&pinctrl_usdhc2_100mhz>;
+	pinctrl-2 = <&pinctrl_usdhc2_200mhz>;
 	bus-width = <8>;
 	non-removable;
 	keep-power-in-suspend;
 	no-1-8-v;
 	disable-wp;
+	cap-mmc-highspeed;
 	status = "okay";
 };
 
@@ -731,18 +760,18 @@
 	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
 	/*mmc-pwrseq = <&wifi_pwrseq>;*/
 	bus-width = <4>;
-	//enable-sdio-wakeup;
+	/*enable-sdio-wakeup;*/
 	non-removable;
 	disable-wp;
 	no-1-8-v;
 	wifi-host;
-	//keep-power-in-suspend;
+	/*keep-power-in-suspend;*/
 	status = "okay";
 
 	brcmf: bcrmf@1 {
 		reg = <1>;
 		/*compatible = "brcm,bcm4329-fmac";*/
-		compatible = "android,bcmdhd_wlan";
+		compatible = "android,bcmhd_wlan";
 		interrupt-parent = <&gpio4>;
 		interrupts = <2 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "host-wake";

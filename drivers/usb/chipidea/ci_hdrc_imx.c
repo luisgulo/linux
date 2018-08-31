@@ -28,6 +28,8 @@
 #include "ci.h"
 #include "ci_hdrc_imx.h"
 
+#include <linux/pinctrl/consumer.h>
+
 struct ci_hdrc_imx_platform_flag {
 	unsigned int flags;
 	bool runtime_pm;
