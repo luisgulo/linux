@@ -1,3 +1,5 @@
+#include <linux/namei.h>
+#include <linux/dcache.h>
 
 #include <typedefs.h>
 #include <osl.h>
@@ -445,23 +447,51 @@ dhd_conf_set_fw_name_by_chip(dhd_pub_t *dhd, char *fw_path)
 	int fw_type, ag_type;
 	uint chip, chiprev;
 	int i;
+    char buf[256];
+   	int err;
+   	struct path path;
+   	char *ptr;
 
 	chip = dhd->conf->chip;
 	chiprev = dhd->conf->chiprev;
 
+    printf("%s: Configured fw path=%s\n", __FUNCTION__, fw_path);
+	printf("%s: chip=%d, chipreb=%d\n", __FUNCTION__, chip, chiprev);
+
 	if (fw_path[0] == '\0') {
 #ifdef CONFIG_BCMDHD_FW_PATH
+        printf("%s: CONFIG_BCMDHD_FW_PATH=%*.*s\n", __FUNCTION__, 0, MOD_PARAM_PATHLEN);
 		bcm_strncpy_s(fw_path, MOD_PARAM_PATHLEN-1, CONFIG_BCMDHD_FW_PATH, MOD_PARAM_PATHLEN-1);
+
 		if (fw_path[0] == '\0')
 #endif
 		{
-			printf("firmware path is null\n");
+			printf("%s: firmware path is null\n", __FUNCTION__);
 			return;
 		}
 	}
 #ifndef FW_PATH_AUTO_SELECT
+    printf("%s: FW_PATH_AUTO_SELECT not set, returning !\n", __FUNCTION__);
 	return;
 #endif
+
+    // Resolve symlink if given fw_path is a symlink (since the real path is used as basis for selection of final .bin file below)
+    err = kern_path(fw_path, LOOKUP_FOLLOW, &path);
+	if(err) {
+	    // Unable to resolve path
+	    printf("s%: WARNING - Unable to resolve if given fw is symlink or not !\n", __FUNCTION__);
+	}
+	else {
+	    ptr = d_path(&path, buf, sizeof(buf));
+	    if(IS_ERR(ptr)) {
+	        // Unable to resolve path
+	        printf("s%: WARNING - Unable to resolve if given fw is symlink or not !\n", __FUNCTION__);
+	    }
+
+	    // Copy resolved path back to fw_path, event if it is equal or not
+	    bcm_strncpy_s(fw_path, MOD_PARAM_PATHLEN-1, ptr, sizeof(buf));
+	    printf("%s: Resolved fw path: %*.*s\n", __FUNCTION__, 0, MOD_PARAM_PATHLEN, fw_path);
+	}
 
 	/* find out the last '/' */
 	i = strlen(fw_path);
@@ -469,11 +499,16 @@ dhd_conf_set_fw_name_by_chip(dhd_pub_t *dhd, char *fw_path)
 		if (fw_path[i] == '/') break;
 		i--;
 	}
+
 #ifdef BAND_AG
-	ag_type = FW_TYPE_AG;
+    printf("%s: BAND_AG specified, setting FW_TYPE_AG !\n", __FUNCTION__);
+	ag_type = FW_TYPE_AG
 #else
+    printf("%s: BAND_AG not specified, checking if firmware contains _ag..\n", __FUNCTION__);
 	ag_type = strstr(&fw_path[i], "_ag") ? FW_TYPE_AG : FW_TYPE_G;
 #endif
+
+    printf("%s: Checking if firmware contains _mfg, _apsta, _p2p or _es..\n", __FUNCTION__);
 	fw_type = (strstr(&fw_path[i], "_mfg") ? FW_TYPE_MFG :
 		(strstr(&fw_path[i], "_apsta") ? FW_TYPE_APSTA :
 		(strstr(&fw_path[i], "_p2p") ? FW_TYPE_P2P :
@@ -563,6 +598,31 @@ dhd_conf_set_nv_name_by_chip(dhd_pub_t *dhd, char *nv_path)
 	int matched=-1;
 	uint chip, chiprev;
 	int i;
+    char buf[256];
+   	int err;
+   	struct path path;
+   	char *ptr;
+
+    printf("%s: Configured nv path=%s\n", __FUNCTION__, nv_path);
+
+    // Resolve symlink if given fw_path is a symlink (since the real path is used as basis for selection of final .bin file below)
+    err = kern_path(nv_path, LOOKUP_FOLLOW, &path);
+	if(err) {
+	    // Unable to resolve path
+	    printf("s%: WARNING - Unable to resolve if given nv-path is symlink or not !\n", __FUNCTION__);
+	}
+	else {
+	    ptr = d_path(&path, buf, sizeof(buf));
+	    if(IS_ERR(ptr)) {
+	        // Unable to resolve path
+	        printf("s%: WARNING - Unable to resolve if given nw-path is symlink or not !\n", __FUNCTION__);
+	    }
+
+	    // Copy resolved path back to fw_path, event if it is equal or not
+	    bcm_strncpy_s(nv_path, MOD_PARAM_PATHLEN-1, ptr, sizeof(buf));
+	    printf("%s: Resolved nv path: %*.*s\n", __FUNCTION__, 0, MOD_PARAM_PATHLEN, nv_path);
+	}
+
 
 	chip = dhd->conf->chip;
 	chiprev = dhd->conf->chiprev;
