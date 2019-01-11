@@ -1028,6 +1028,8 @@ static int brcmf_sdiod_probe(struct brcmf_sdio_dev *sdiodev)
 	uint max_blocks;
 	int ret = 0;
 
+	pr_debug("brcmf_sdiod_probe (enter)\n");
+
 	sdiodev->num_funcs = 2;
 
 	sdio_claim_host(sdiodev->func[1]);
@@ -1111,6 +1113,7 @@ static const struct sdio_device_id brcmf_sdmmc_ids[] = {
 	BRCMF_SDIO_DEVICE(SDIO_DEVICE_ID_BROADCOM_43430),
 	BRCMF_SDIO_DEVICE(SDIO_DEVICE_ID_BROADCOM_4345),
 	BRCMF_SDIO_DEVICE(SDIO_DEVICE_ID_BROADCOM_4354),
+	BRCMF_SDIO_DEVICE(SDIO_DEVICE_ID_BROADCOM_43455),
 	{ /* end: all zeroes */ }
 };
 MODULE_DEVICE_TABLE(sdio, brcmf_sdmmc_ids);
@@ -1125,7 +1128,8 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
 	struct brcmf_sdio_dev *sdiodev;
 	struct brcmf_bus *bus_if;
 
-	printk("brcmf_ops_sdio_probe\n");
+	pr_debug("brcmf_ops_sdio_probe (enter)\n");
+
 	brcmf_dbg(SDIO, "Enter\n");
 	brcmf_dbg(SDIO, "Class=%x\n", func->class);
 	brcmf_dbg(SDIO, "sdio vendor ID: 0x%04x\n", func->vendor);

@@ -16,9 +16,76 @@
 #include <linux/regmap.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
+#include <linux/gpio.h>
+#include <config/brcmfmac.h>
+#include <linux/delay.h>
+#include <linux/platform_data/brcmfmac-sdio.h>
 
 #include "common.h"
+#include "hardware.h"
 #include "cpuidle.h"
+
+#define WL_PWR_ON IMX_GPIO_NR(3, 30)
+#define WL_REG_ON IMX_GPIO_NR(4, 0)
+
+static bool init_wifi_gpio(void)
+{
+   int err;
+
+   pr_debug("init_wifi_gpio: enter\n");
+
+   pr_debug("init_wifi_gpio: Requesting GPIO_3_30 (PWR_ON) ..\n");
+   err = gpio_request_one(WL_PWR_ON, GPIOF_OUT_INIT_LOW, "wl_pwr_on");
+   if (err) {
+       pr_err("Failed to request power GPIO for wifi: %d\n", err);
+       return false;
+   }
+   pr_debug("init_wifi_gpio: OK !\n");
+
+   pr_debug("init_wifi_gpio: Requesting GPIO4_0 (REG_ON) ..\n");
+   err = gpio_request_one(WL_REG_ON, GPIOF_OUT_INIT_LOW, "wl_reg_on");
+   if (err) {
+       pr_err("Failed to request regulator GPIO for wifi: %d\n", err);
+       return false;
+   }
+   pr_debug("init_wifi_gpio: OK !!\n");
+
+   return true;
+}
+
+static void brcmfmac_power_on(void)
+{
+   pr_debug("brcmfmac_power_on: enter\n");
+   gpio_set_value(WL_PWR_ON, 1);
+   gpio_set_value(WL_REG_ON, 1);
+}
+
+static void brcmfmac_power_off(void)
+{
+   pr_debug("brcmfmac_power_off: enter\n");
+   gpio_set_value(WL_PWR_ON, 0);
+   gpio_set_value(WL_REG_ON, 0);
+}
+
+static void brcmfmac_reset(void)
+{
+   pr_debug("brcmfmac_reset: enter\n");
+   brcmfmac_power_off();
+   msleep(5);
+   brcmfmac_power_on();
+}
+
+static struct brcmfmac_sdio_platform_data brcmfmac_sdio_pdata = {
+   .power_on       = brcmfmac_power_on,
+   .power_off      = brcmfmac_power_off,
+   .reset          = brcmfmac_reset
+};
+
+static struct platform_device brcmfmac_device = {
+   .name           = BRCMFMAC_SDIO_PDATA_NAME,
+   .id         = PLATFORM_DEVID_NONE,
+   .dev.platform_data  = &brcmfmac_sdio_pdata
+};
 
 static void __init imx6sl_fec_clk_init(void)
 {
@@ -33,6 +100,10 @@ static void __init imx6sl_fec_clk_init(void)
 			IMX6SL_GPR1_FEC_CLOCK_MUX1_SEL_MASK, 0);
 	} else
 		pr_err("failed to find fsl,imx6sl-iomux-gpr regmap\n");
+
+	if (init_wifi_gpio()) {
+	    platform_device_register(&brcmfmac_device);
+	}
 }
 
 static inline void imx6sl_fec_init(void)

@@ -686,6 +686,8 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
 	int i;
 	char end;
 
+	printk("brcmf_sdio_get_fwnames: chip id:%lx/%ld, revision:%d\n", ci->chip, ci->chip, ci->chiprev);
+
 	for (i = 0; i < ARRAY_SIZE(brcmf_fwname_data); i++) {
 		if (brcmf_fwname_data[i].chipid == ci->chip &&
 		    brcmf_fwname_data[i].revmsk & BIT(ci->chiprev))
@@ -696,6 +698,7 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
 		brcmf_err("Unknown chipid %d [%d]\n", ci->chip, ci->chiprev);
 		return -ENODEV;
 	}
+
 
 	/* check if firmware path is provided by module parameter */
 	if (brcmf_firmware_path[0] != '\0') {
@@ -716,6 +719,9 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
 		sizeof(sdiodev->fw_name));
 	strlcat(sdiodev->nvram_name, brcmf_fwname_data[i].nv,
 		sizeof(sdiodev->nvram_name));
+
+	pr_debug("brcmf_sdio_get_fwnames: fw_name    = %s\n", sdiodev->fw_name);
+	pr_debug("brcmf_sdio_get_fwnames: nvram_name = %s\n", sdiodev->nvram_name);
 
 	return 0;
 }
@@ -1046,7 +1052,7 @@ brcmf_sdio_bus_sleep(struct brcmf_sdio *bus, bool sleep, bool pendok)
 end:
 	/* control clocks */
 	if (sleep) {
-		if (!bus->sr_enabled)
+		if (false && !bus->sr_enabled)
 			brcmf_sdio_clkctl(bus, CLK_NONE, pendok);
 	} else {
 		brcmf_sdio_clkctl(bus, CLK_AVAIL, pendok);
@@ -4090,7 +4096,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 	struct brcmf_sdio *bus;
 	struct workqueue_struct *wq;
 
-	brcmf_dbg(TRACE, "Enter\n");
+	pr_debug("brcmf_sdio_probe (enter)\n");
 
 	/* Allocate private bus interface state */
 	bus = kzalloc(sizeof(struct brcmf_sdio), GFP_ATOMIC);
@@ -4121,7 +4127,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 	wq = alloc_ordered_workqueue("brcmf_wq/%s", WQ_MEM_RECLAIM,
 				     dev_name(&sdiodev->func[1]->dev));
 	if (!wq) {
-		brcmf_err("insufficient memory to create txworkqueue\n");
+		pr_err("brcmf_sdio_probe: insufficient memory to create txworkqueue\n");
 		goto fail;
 	}
 	brcmf_sdiod_freezer_count(sdiodev);
@@ -4130,7 +4136,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 
 	/* attempt to attach to the dongle */
 	if (!(brcmf_sdio_probe_attach(bus))) {
-		brcmf_err("brcmf_sdio_probe_attach failed\n");
+		pr_err("brcmf_sdio_probe: brcmf_sdio_probe_attach failed\n");
 		goto fail;
 	}
 
@@ -4150,7 +4156,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 					bus, "brcmf_wdog/%s",
 					dev_name(&sdiodev->func[1]->dev));
 	if (IS_ERR(bus->watchdog_tsk)) {
-		pr_warn("brcmf_watchdog thread failed to start\n");
+		pr_err("brcmf_sdio_probe: brcmf_watchdog thread failed to start\n");
 		bus->watchdog_tsk = NULL;
 	}
 	/* Initialize DPC thread */
@@ -4169,7 +4175,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 	/* Attach to the common layer, reserve hdr space */
 	ret = brcmf_attach(bus->sdiodev->dev);
 	if (ret != 0) {
-		brcmf_err("brcmf_attach failed\n");
+		pr_err("brcmf_sdio_probe: brcmf_attach failed\n");
 		goto fail;
 	}
 
@@ -4185,7 +4191,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 			    ALIGNMENT) + bus->head_align;
 		bus->rxbuf = kmalloc(bus->rxblen, GFP_ATOMIC);
 		if (!(bus->rxbuf)) {
-			brcmf_err("rxbuf allocation failed\n");
+			pr_err("brcmf_sdio_probe: rxbuf allocation failed\n");
 			goto fail;
 		}
 	}
@@ -4221,7 +4227,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 				     sdiodev->fw_name, sdiodev->nvram_name,
 				     brcmf_sdio_firmware_callback);
 	if (ret != 0) {
-		brcmf_err("async firmware request failed: %d\n", ret);
+		pr_err("brcmf_sdio_probe: async firmware request failed: %d\n", ret);
 		goto fail;
 	}
 
