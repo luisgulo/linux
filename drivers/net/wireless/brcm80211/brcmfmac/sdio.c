@@ -720,8 +720,8 @@ static int brcmf_sdio_get_fwnames(struct brcmf_chip *ci,
 	strlcat(sdiodev->nvram_name, brcmf_fwname_data[i].nv,
 		sizeof(sdiodev->nvram_name));
 
-	pr_debug("brcmf_sdio_get_fwnames: fw_name    = %s\n", sdiodev->fw_name);
-	pr_debug("brcmf_sdio_get_fwnames: nvram_name = %s\n", sdiodev->nvram_name);
+	printk("brcmf_sdio_get_fwnames: fw_name    = %s\n", sdiodev->fw_name);
+	printk("brcmf_sdio_get_fwnames: nvram_name = %s\n", sdiodev->nvram_name);
 
 	return 0;
 }
@@ -2931,7 +2931,7 @@ static int brcmf_sdio_readconsole(struct brcmf_sdio *bus)
 			if (line[n - 1] == '\r')
 				n--;
 			line[n] = 0;
-			pr_debug("CONSOLE: %s\n", line);
+			printk("CONSOLE: %s\n", line);
 		}
 	}
 break2:
@@ -3688,11 +3688,18 @@ brcmf_sdio_drivestrengthinit(struct brcmf_sdio_dev *sdiodev,
 	u32 cc_data_temp;
 	u32 addr;
 
-	if (!(ci->cc_caps & CC_CAP_PMU))
+    printk("brcmf_sdio_drivestrengthinit: enter\n");
+
+	if (!(ci->cc_caps & CC_CAP_PMU)) {
+		printk("brcmf_sdio_drivestrengthinit: returning, no CC_CAP_PMU\n");
 		return;
+	}
+
+    printk("brcmf_sdio_drivestrengthinit: chip: %d, chiprev: %d, pmurev: %d\n", ci->chip, ci->chiprev, ci->pmurev);
 
 	switch (SDIOD_DRVSTR_KEY(ci->chip, ci->pmurev)) {
 	case SDIOD_DRVSTR_KEY(BRCM_CC_4330_CHIP_ID, 12):
+	    printk("brcmf_sdio_drivestrengthinit: Setting drivestrength config for 4330 with PMU rev 12\n");
 		str_tab = sdiod_drvstr_tab1_1v8;
 		str_mask = 0x00003800;
 		str_shift = 11;
@@ -3710,7 +3717,7 @@ brcmf_sdio_drivestrengthinit(struct brcmf_sdio_dev *sdiodev,
 			str_mask = 0x00000007;
 			str_shift = 0;
 		} else
-			brcmf_err("Invalid SDIO Drive strength for chip %s, strength=%d\n",
+			pr_err("brcmf_sdio_drivestrengthinit: Invalid SDIO Drive strength for chip %s, strength=%d\n",
 				  ci->name, drivestrength);
 		break;
 	case SDIOD_DRVSTR_KEY(BRCM_CC_43362_CHIP_ID, 13):
@@ -3719,7 +3726,7 @@ brcmf_sdio_drivestrengthinit(struct brcmf_sdio_dev *sdiodev,
 		str_shift = 11;
 		break;
 	default:
-		brcmf_err("No SDIO Drive strength init done for chip %s rev %d pmurev %d\n",
+		pr_err("brcmf_sdio_drivestrengthinit: No SDIO Drive strength init done for chip %s rev %d pmurev %d\n",
 			  ci->name, ci->chiprev, ci->pmurev);
 		break;
 	}
@@ -3740,8 +3747,11 @@ brcmf_sdio_drivestrengthinit(struct brcmf_sdio_dev *sdiodev,
 		cc_data_temp |= drivestrength_sel;
 		brcmf_sdiod_regwl(sdiodev, addr, cc_data_temp, NULL);
 
-		brcmf_dbg(INFO, "SDIO: %d mA (req=%d mA) drive strength selected, set to 0x%08x\n",
+		printk("brcmf_sdio_drivestrengthinit: %d mA (req=%d mA) drive strength selected, set to 0x%08x\n",
 			  str_tab[i].strength, drivestrength, cc_data_temp);
+	}
+	else {
+	    printk("brcmf_sdio_drivestrengthinit: Drivestrength not initiated !!\n");
 	}
 }
 
@@ -3850,7 +3860,7 @@ brcmf_sdio_probe_attach(struct brcmf_sdio *bus)
 
 	sdio_claim_host(bus->sdiodev->func[1]);
 
-	pr_debug("F1 signature read @0x18000000=0x%4x\n",
+	printk("F1 signature read @0x18000000=0x%4x\n",
 		 brcmf_sdiod_regrl(bus->sdiodev, SI_ENUM_BASE, NULL));
 
 	/*
@@ -4096,7 +4106,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 	struct brcmf_sdio *bus;
 	struct workqueue_struct *wq;
 
-	pr_debug("brcmf_sdio_probe (enter)\n");
+	printk("brcmf_sdio_probe (enter)\n");
 
 	/* Allocate private bus interface state */
 	bus = kzalloc(sizeof(struct brcmf_sdio), GFP_ATOMIC);

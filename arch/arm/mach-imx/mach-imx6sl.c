@@ -77,8 +77,8 @@ static void brcmfmac_reset(void)
 
 static struct brcmfmac_sdio_platform_data brcmfmac_sdio_pdata = {
    .power_on       = brcmfmac_power_on,
-   .power_off      = brcmfmac_power_off,
-   .reset          = brcmfmac_reset
+   .power_off      = brcmfmac_power_off
+//   .reset          = brcmfmac_reset
 };
 
 static struct platform_device brcmfmac_device = {
