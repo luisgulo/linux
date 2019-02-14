@@ -760,19 +760,20 @@
 	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
 	mmc-pwrseq = <&wifi_pwrseq>;
 	bus-width = <4>;
-	enable-sdio-wakeup;
+	/* enable-sdio-wakeup; */
 	non-removable;
 	disable-wp;
 	no-1-8-v;
 	wifi-host;
-	keep-power-in-suspend;
+	/* keep-power-in-suspend; */
+	cap-power-off-card;
 	status = "okay";
 
 	brcmf: bcrmf@1 {
 		reg = <1>;
 		compatible = "brcm,bcm4329-fmac";
 		interrupt-parent = <&gpio4>;
-		interrupts = <2 IRQ_TYPE_LEVEL_HIGH>;
+		interrupts = <2 IRQ_TYPE_NONE>;
 		interrupt-names = "host-wake";
 		/*resets = <&wifi_reset>;*/
 	};
